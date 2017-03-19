@@ -33,10 +33,10 @@ impl <T: PartialOrd + Default> Tree<T> {
     };
 
     if this_val <= other {
-      std::mem::replace(self, Tree::branch(this_val, other));
+      *self = Tree::branch(this_val, other);
     }
     else {
-      std::mem::replace(self, Tree::branch(other, this_val));
+      *self = Tree::branch(other, this_val);
     }
 
     Ok(())
