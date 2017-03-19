@@ -53,40 +53,6 @@ impl<T: PartialOrd> Tree<T> {
   }
 }
 
-fn find_mut<'a, T, F>(start: &'a mut Tree<T>, mut f: F) -> Option<&'a mut Tree<T>>
-  where F: FnMut(&T) -> bool,
-        T: PartialOrd
-{
-  fn find_impl<'a, T, F>(node: &'a mut Tree<T>, f: &mut F) -> Option<&'a mut Tree<T>>
-    where F: FnMut(&T) -> bool,
-          T: PartialOrd
-  {
-    let found = if let Some(node) = node.left.as_mut() {
-      find_impl(node, f).is_some()
-    }
-    else {
-      false
-    };
-
-    if found {
-      return find_impl(node.left.as_mut().unwrap(), f);
-    }
-    else {
-      if f(&node.value) {
-        return Some(node);
-      }
-    }
-
-    if let Some(node) = node.right.as_mut() {
-      return find_impl(node, f);
-    }
-
-    None
-  }
-
-  find_impl(start, &mut f)
-}
-
 fn find<'a, T, F>(start: &'a Tree<T>, mut f: F) -> Option<&'a Tree<T>>
   where F: FnMut(&T) -> bool,
         T: PartialOrd
@@ -144,7 +110,6 @@ mod tests {
     Tree,
     descend,
     find,
-    find_mut
   };
 
   #[test]
