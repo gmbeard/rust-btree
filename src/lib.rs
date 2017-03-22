@@ -31,6 +31,10 @@ impl<T> Tree<T> {
             _ => None
     }
   }
+
+  fn iter<'a>(&'a self) -> TreeIter<'a, T> {
+      TreeIter::new(self)
+  }
 }
 
 impl<T: PartialOrd> Tree<T> {
@@ -51,6 +55,57 @@ impl<T: PartialOrd> Tree<T> {
 
     *node = Some(Box::new(Tree::leaf(value)));
   }
+}
+
+struct TreeIter<'a, T: 'a> {
+    buffer: Vec<Option<&'a Tree<T>>>
+}
+
+impl<'a, T: 'a> TreeIter<'a, T> {
+    fn new(start: &'a Tree<T>) -> TreeIter<'a, T> {
+        let mut v = vec![Some(start)];
+        loop {
+            match v.pop() {
+                Some(Some(val)) => {
+                    let mut left = val.left.as_ref().map(|l| &**l);
+                    v.push(Some(val));
+                    v.push(left.take());
+                },
+                _ => break
+            }
+        }
+
+        TreeIter { buffer: v }
+    }
+}
+
+impl<'a, T: 'a> Iterator for TreeIter<'a, T> {
+    type Item = &'a T;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        loop {
+            match self.buffer.pop() {
+                Some(Some(val)) => {
+                    if let Some(right) = val.right.as_ref() {
+                        self.buffer.push(Some(&*right));
+                        loop {
+                            match self.buffer.pop() {
+                                Some(Some(val)) => {
+                                    let mut left = val.left.as_ref().map(|l| &**l);
+                                    self.buffer.push(Some(val));
+                                    self.buffer.push(left.take());
+                                },
+                                _ => break
+                            }
+                        }
+                    }
+                    return Some(&val.value);
+                },
+                _ => break
+            }
+        }
+        None
+    }
 }
 
 fn find<'a, T, F>(start: &'a Tree<T>, mut f: F) -> Option<&'a Tree<T>>
@@ -144,4 +199,17 @@ mod tests {
 
     assert_eq!(v, vec![15, 30, 42]);
   }
+
+    #[test]
+    fn test_iterator_yields_correct_results() {
+        let mut t = Tree::leaf(42);
+        t.push(15);
+        t.push(30);
+        t.push(1);
+        t.push(100);
+
+        let v = t.iter().collect::<Vec<_>>();
+
+        assert_eq!(v, vec![&1, &15, &30, &42, &100]);
+    }
 }
